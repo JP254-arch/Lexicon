@@ -89,7 +89,7 @@
             <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-10">
                 <div class="team-card bg-rose-50 rounded-2xl shadow-lg"
                      data-aos="zoom-in" data-aos-delay="100">
-                    <img src="{{ asset('images/fenny.jpg') }}" alt="Team Member"
+                    <img src="{{ asset('images/librarian.jpg') }}" alt="Team Member"
                          class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-rose-400 mb-4">
                     <h3 class="text-xl font-semibold text-indigo-700">Fenny Fenaya</h3>
                     <p class="text-gray-500 mb-2">Founder & Chief Librarian</p>
@@ -111,7 +111,7 @@
 
                 <div class="team-card bg-rose-100 rounded-2xl shadow-lg"
                      data-aos="zoom-in" data-aos-delay="300">
-                    <img src="{{ asset('images/shirly.jpg') }}" alt="Team Member"
+                    <img src="{{ asset('images/manager.jpg') }}" alt="Team Member"
                          class="w-32 h-32 mx-auto rounded-full object-cover border-4 border-rose-400 mb-4">
                     <h3 class="text-xl font-semibold text-indigo-700">Shirly Marion</h3>
                     <p class="text-gray-500 mb-2">Community Manager</p>

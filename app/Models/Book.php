@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class Book extends Model
 {
@@ -15,16 +16,16 @@ class Book extends Model
         'author_id',
         'category_id',
         'description',
-        'cover', // <-- keep this
+        'cover',
         'total_copies',
         'available_copies',
         'published_at',
+        'views',
     ];
 
-    // Casts
     protected $casts = [
-        'cover' => 'array',       // cover stored as array
-        'published_at' => 'date', // ensures Carbon instance
+        'cover' => 'array',
+        'published_at' => 'date',
     ];
 
     // Relationships
@@ -43,5 +44,54 @@ class Book extends Model
     public function reservations()
     {
         return $this->hasMany(Reservation::class);
+    }
+
+    // likes: many-to-many with users (pivot table book_likes)
+    public function likes()
+    {
+        return $this->belongsToMany(\App\Models\User::class, 'book_likes')->withTimestamps();
+    }
+
+    // ratings: many ratings (multiple per user allowed)
+    public function ratings()
+    {
+        return $this->hasMany(\App\Models\BookRating::class);
+    }
+
+    // reviews
+    public function reviews()
+    {
+        return $this->hasMany(\App\Models\BookReview::class);
+    }
+
+    // helper: is liked by a specific user
+    public function isLikedBy($user)
+    {
+        if (!$user)
+            return false;
+        return $this->likes()->where('user_id', $user->id)->exists();
+    }
+
+    // helper: likes count
+    public function likesCount()
+    {
+        return $this->likes()->count();
+    }
+
+    // helper: average rating (float, 1-5)
+    public function averageRating()
+    {
+        if ($this->relationLoaded('ratings')) {
+            $avg = $this->ratings->avg('stars');
+        } else {
+            $avg = $this->ratings()->avg('stars');
+        }
+        return $avg ? round($avg, 2) : 0;
+    }
+
+    // helper: reviews count
+    public function reviewsCount()
+    {
+        return $this->reviews()->count();
     }
 }

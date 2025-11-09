@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use App\Models\Author;
 use App\Models\Category;
+use App\Models\BookRating;
+use App\Models\BookReview;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class BookController extends Controller
 {
@@ -21,30 +24,37 @@ class BookController extends Controller
     public function index(Request $request)
     {
         $q = $request->query('q');
+        $searchBy = $request->query('search_by', 'all');
         $categoryId = $request->query('category');
 
         $booksQuery = Book::with(['author', 'category'])
-            ->when(
-                $q,
-                fn($qb) => $qb
-                    ->where('title', 'like', "%{$q}%")
-                    ->orWhereHas('category', fn($qb2) => $qb2->where('name', 'like', "%{$q}%"))
-                    ->orWhereHas('author', fn($qb3) => $qb3->where('name', 'like', "%{$q}%"))
-            )
+            ->withCount(['likes', 'reviews', 'ratings'])
+            ->when($q, function ($qb) use ($q, $searchBy) {
+                if ($searchBy === 'all' || $searchBy === 'title') {
+                    $qb->where('title', 'like', "%{$q}%");
+                }
+                if ($searchBy === 'all' || $searchBy === 'category') {
+                    $qb->orWhereHas('category', fn($q2) => $q2->where('name', 'like', "%{$q}%"));
+                }
+                if ($searchBy === 'all' || $searchBy === 'author') {
+                    $qb->orWhereHas('author', fn($q3) => $q3->where('name', 'like', "%{$q}%"));
+                }
+            })
             ->when($categoryId, fn($qb) => $qb->where('category_id', $categoryId))
             ->orderBy('title', 'asc');
 
-        // If the request is for the homepage
+        // Home page: show random 3 books
         if ($request->path() === '/') {
             $books = Book::with('author', 'category')->inRandomOrder()->take(3)->get();
             $categories = Category::orderBy('name', 'asc')->get();
             return view('home', compact('books', 'categories'));
         }
 
-        $books = $booksQuery->paginate(12);
+        // **Paginate 9 books per page**
+        $books = $booksQuery->paginate(9)->withQueryString();
         $categories = Category::orderBy('name', 'asc')->get();
 
-        return view('books.index', compact('books', 'categories', 'q', 'categoryId'));
+        return view('books.index', compact('books', 'categories', 'q', 'searchBy', 'categoryId'));
     }
 
     /**
@@ -55,13 +65,11 @@ class BookController extends Controller
         $q = $request->query('q');
 
         $books = Book::with('author', 'category')
-            ->when(
-                $q,
-                fn($qb) => $qb
-                    ->where('title', 'like', "%{$q}%")
+            ->when($q, function ($qb) use ($q) {
+                $qb->where('title', 'like', "%{$q}%")
                     ->orWhereHas('category', fn($qb2) => $qb2->where('name', 'like', "%{$q}%"))
-                    ->orWhereHas('author', fn($qb3) => $qb3->where('name', 'like', "%{$q}%"))
-            )
+                    ->orWhereHas('author', fn($qb3) => $qb3->where('name', 'like', "%{$q}%"));
+            })
             ->limit(10)
             ->get();
 
@@ -75,9 +83,6 @@ class BookController extends Controller
         );
     }
 
-    /**
-     * Show the form to create a new book
-     */
     public function create()
     {
         $authors = Author::orderBy('name', 'asc')->get();
@@ -85,9 +90,6 @@ class BookController extends Controller
         return view('books.form', compact('authors', 'categories'));
     }
 
-    /**
-     * Store a new book
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -113,17 +115,14 @@ class BookController extends Controller
         return redirect()->route('books.index')->with('success', 'Book added successfully!');
     }
 
-    /**
-     * Display a single book
-     */
     public function show(Book $book)
     {
+        $book->increment('views');
+        $book->load(['author', 'category', 'ratings', 'reviews', 'likes']);
+        $book->loadCount(['likes', 'reviews', 'ratings']);
         return view('books.show', compact('book'));
     }
 
-    /**
-     * Show the edit form for a specific book
-     */
     public function edit(Book $book)
     {
         $authors = Author::orderBy('name', 'asc')->get();
@@ -131,9 +130,6 @@ class BookController extends Controller
         return view('books.form', compact('book', 'authors', 'categories'));
     }
 
-    /**
-     * Update an existing book
-     */
     public function update(Request $request, Book $book)
     {
         $data = $request->validate([
@@ -152,7 +148,6 @@ class BookController extends Controller
             $data['cover'] = ['type' => 'upload', 'path' => $path];
         }
 
-        // Adjust available copies if total copies changed
         $diff = $data['total_copies'] - $book->total_copies;
         if ($diff !== 0) {
             $book->available_copies += $diff;
@@ -163,12 +158,64 @@ class BookController extends Controller
         return redirect()->route('books.index')->with('success', 'Book updated successfully!');
     }
 
-    /**
-     * Delete a book
-     */
     public function destroy(Book $book)
     {
         $book->delete();
-        return back()->with('success', 'Book deleted successfully!');
+        return back()->with('success', 'Book deleted successfully.');
+    }
+
+    public function toggleLike(Request $request, Book $book)
+    {
+        $user = Auth::user();
+        if (!$user)
+            return response()->json(['message' => 'Unauthorized'], 401);
+
+        $liked = $book->likes()->toggle($user->id)['attached'] ?? false;
+        $likesCount = $book->likes()->count();
+
+        return response()->json(['liked' => $liked, 'likesCount' => $likesCount]);
+    }
+
+    public function rate(Request $request, Book $book)
+    {
+        $user = Auth::user();
+        if (!$user)
+            return response()->json(['message' => 'Unauthorized'], 401);
+
+        $data = $request->validate([
+            'stars' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string',
+        ]);
+
+        BookRating::create([
+            'book_id' => $book->id,
+            'user_id' => $user->id,
+            'stars' => $data['stars'],
+            'comment' => $data['comment'] ?? null,
+        ]);
+
+        $average = $book->ratings()->avg('stars');
+        $count = $book->ratings()->count();
+
+        return response()->json(['average' => round($average, 2), 'count' => $count]);
+    }
+
+    public function addReview(Request $request, Book $book)
+    {
+        $user = Auth::user();
+        if (!$user)
+            return response()->json(['message' => 'Unauthorized'], 401);
+
+        $data = $request->validate(['review' => 'required|string|max:1000']);
+
+        BookReview::create([
+            'book_id' => $book->id,
+            'user_id' => $user->id,
+            'content' => $data['review'],
+        ]);
+
+        $reviewsCount = $book->reviews()->count();
+
+        return response()->json(['reviewsCount' => $reviewsCount]);
     }
 }
