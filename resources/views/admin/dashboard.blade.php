@@ -80,6 +80,7 @@
                             <th class="px-6 py-3 text-left">User</th>
                             <th class="px-6 py-3 text-left">Book Title</th>
                             <th class="px-6 py-3 text-left">Status</th>
+                            <th class="px-6 py-3 text-left">Payment Status</th>
                             <th class="px-6 py-3 text-left">Amount (Ksh)</th>
                             <th class="px-6 py-3 text-left">Fine (Ksh)</th>
                             <th class="px-6 py-3 text-left">Total (Ksh)</th>
@@ -109,6 +110,13 @@
                                         <span class="text-red-600 font-semibold">Overdue</span>
                                     @else
                                         <span class="text-yellow-600 font-semibold">Borrowed</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
+                                    @if ($loan->payment_status === 'paid')
+                                        <span class="text-green-600 font-semibold">Paid</span>
+                                    @else
+                                        <span class="text-red-500 font-semibold">Unpaid</span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-4">{{ number_format($loan->amount ?? 0, 2) }}</td>

@@ -66,7 +66,7 @@ Route::middleware(['auth', 'role:librarian|admin'])->group(function () {
     Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
     Route::get('/loans/{loan}/edit', [LoanController::class, 'edit'])->name('loans.edit');
     Route::put('/loans/{loan}', [LoanController::class, 'update'])->name('loans.update');
-    Route::patch('/admin/loans/{loan}/return', [LoanController::class, 'returnLoan'])->name('admin.loans.return');
+    Route::patch('/admin/loans/{loan}/return', [LoanController::class, 'returnBook'])->name('admin.loans.return');
     Route::delete('/loans/{loan}', [LoanController::class, 'destroy'])->name('loans.destroy');
 });
 
@@ -95,7 +95,7 @@ Route::middleware(['auth', 'role:member'])->group(function () {
     Route::post('/books/{loan}/return', [LoanController::class, 'returnBook'])->name('loans.return');
 
     // Pay deferred loans
-    Route::post('/loans/{loan}/pay-deferred', [LoanController::class, 'payDeferredLoan'])->name('loans.payDeferred');
+    Route::get('/loans/{loan}/pay-deferred', [LoanController::class, 'payDeferredLoan'])->name('loans.payDeferred');
 
     // My loans page
     Route::get('/my-loans', [LoanController::class, 'myLoans'])->name('loans.my');

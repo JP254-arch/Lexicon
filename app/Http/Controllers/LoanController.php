@@ -11,36 +11,43 @@ use Stripe\Checkout\Session as StripeSession;
 
 class LoanController extends Controller
 {
+    const DEFAULT_AMOUNT = 500; // Default borrow amount
+    const FINE_PER_DAY = 70;    // Fine per overdue day
+
     public function __construct()
     {
         $this->middleware('auth');
     }
 
-    // Display all loans for admin
+    /**
+     * Admin / Librarian: View all loans
+     */
     public function index()
     {
         $loans = Loan::with(['user', 'book'])->latest()->paginate(10);
         return view('loans.index', compact('loans'));
     }
 
-    // Borrow book
+    /**
+     * Borrow a book
+     */
     public function borrow(Request $request, Book $book)
     {
         $user = Auth::user();
 
-        // Check if already borrowed
-        $existingLoan = $user->loans()->where('book_id', $book->id)
-            ->where('status', 'borrowed')->first();
+        $existingLoan = $user->loans()
+            ->where('book_id', $book->id)
+            ->where('status', 'borrowed')
+            ->first();
 
         if ($existingLoan) {
             return response()->json(['message' => 'You already borrowed this book.'], 400);
         }
 
         $paymentOption = $request->input('payment_option'); // 'instant' or 'deferred'
-        $amount = $book->borrow_price ?? 500; // default borrow price
+        $amount = $book->borrow_price ?? self::DEFAULT_AMOUNT;
 
         if ($paymentOption === 'instant') {
-            // Stripe checkout
             Stripe::setApiKey(env('STRIPE_SECRET'));
 
             $session = StripeSession::create([
@@ -49,9 +56,7 @@ class LoanController extends Controller
                     [
                         'price_data' => [
                             'currency' => 'kes',
-                            'product_data' => [
-                                'name' => $book->title,
-                            ],
+                            'product_data' => ['name' => $book->title],
                             'unit_amount' => $amount * 100,
                         ],
                         'quantity' => 1,
@@ -78,33 +83,43 @@ class LoanController extends Controller
         return response()->json(['message' => 'Book borrowed successfully.', 'loan_id' => $loan->id]);
     }
 
-    // Stripe success callback for instant payment
+    /**
+     * Stripe success callback for instant payment
+     */
     public function borrowSuccess(Book $book)
     {
         $user = Auth::user();
 
-        $loan = Loan::create([
-            'user_id' => $user->id,
-            'book_id' => $book->id,
-            'status' => 'borrowed',
-            'payment_status' => 'paid',
-            'amount' => $book->borrow_price ?? 500,
-            'due_at' => now()->addDays(14),
-        ]);
+        $loan = Loan::firstOrCreate(
+            ['user_id' => $user->id, 'book_id' => $book->id],
+            [
+                'status' => 'borrowed',
+                'amount' => $book->borrow_price ?? self::DEFAULT_AMOUNT,
+                'due_at' => now()->addDays(14),
+                'payment_status' => 'paid',
+            ]
+        );
+
+        if ($loan->payment_status !== 'paid') {
+            $loan->update(['payment_status' => 'paid']);
+        }
 
         return redirect()->route('books.index')->with('success', 'Payment successful, book borrowed!');
     }
 
-    // Return a book
-    public function returnBook(Book $book)
+    /**
+     * Return a book (member / admin)
+     */
+    public function returnBook(Loan $loan)
     {
         $user = Auth::user();
 
-        $loan = $user->loans()->where('book_id', $book->id)
-            ->where('status', 'borrowed')->firstOrFail();
+        if ($user->role !== 'admin' && $loan->user_id !== $user->id) {
+            abort(403);
+        }
 
         if ($loan->payment_status === 'unpaid') {
-            return response()->json(['message' => 'Payment required on return.', 'loan_id' => $loan->id]);
+            return response()->json(['message' => 'Payment required to return the book.', 'loan_id' => $loan->id]);
         }
 
         $loan->update([
@@ -115,13 +130,14 @@ class LoanController extends Controller
         return response()->json(['message' => 'Book returned successfully.']);
     }
 
-    // Pay deferred loan
+    /**
+     * Pay deferred loan
+     */
     public function payDeferredLoan(Loan $loan)
     {
         $user = Auth::user();
-        if ($loan->user_id !== $user->id) {
+        if ($loan->user_id !== $user->id)
             abort(403);
-        }
 
         Stripe::setApiKey(env('STRIPE_SECRET'));
 
@@ -131,9 +147,7 @@ class LoanController extends Controller
                 [
                     'price_data' => [
                         'currency' => 'kes',
-                        'product_data' => [
-                            'name' => $loan->book->title,
-                        ],
+                        'product_data' => ['name' => $loan->book->title],
                         'unit_amount' => $loan->amount * 100,
                     ],
                     'quantity' => 1,
@@ -147,51 +161,71 @@ class LoanController extends Controller
         return redirect($session->url);
     }
 
-    // Stripe success callback for deferred payment
+    /**
+     * Stripe success callback for deferred payment
+     */
     public function paySuccess(Loan $loan)
     {
-        $loan->update([
-            'payment_status' => 'paid',
-        ]);
-
+        $loan->update(['payment_status' => 'paid']);
         return redirect()->route('books.index')->with('success', 'Payment successful!');
     }
 
-    // Edit loan (for admin)
+    /**
+     * Admin: Edit loan
+     */
     public function edit(Loan $loan)
     {
         return view('loans.edit', compact('loan'));
     }
 
-    // Update loan (for admin)
+    /**
+     * Admin: Update loan
+     */
     public function update(Request $request, Loan $loan)
     {
         $request->validate([
             'status' => 'required|in:borrowed,returned',
-            'due_at' => 'required|date',
-            'amount' => 'required|numeric|min:0',
+            'due_at' => 'nullable|date',
+            'total' => 'nullable|numeric|min:0',
         ]);
 
         $loan->update([
             'status' => $request->status,
             'due_at' => $request->due_at,
-            'amount' => $request->amount,
+            'total' => $request->total ?? $loan->amount,
         ]);
 
-        return redirect()->route('loans.index')->with('success', 'Loan updated successfully!');
+        return redirect()->route('loans.index')->with('success', 'Loan updated successfully.');
     }
 
-    // Delete loan (for admin)
+    /**
+     * Admin: Delete loan
+     */
     public function destroy(Loan $loan)
     {
         $loan->delete();
-        return redirect()->route('loans.index')->with('success', 'Loan deleted successfully!');
+        return redirect()->route('loans.index')->with('success', 'Loan deleted successfully.');
     }
 
-    // My loans (for member)
+    /**
+     * Member: My loans dashboard
+     */
     public function myLoans()
     {
-        $loans = Auth::user()->loans()->with('book')->latest()->get();
-        return view('loans.my_loans', compact('loans'));
+        $user = Auth::user();
+        $loans = $user->loans()->with('book')->latest()->get();
+
+        // Compute total_amount and fine dynamically
+        foreach ($loans as $loan) {
+            $fine = 0;
+            if ($loan->status === 'borrowed' && now()->gt($loan->due_at)) {
+                $daysOverdue = now()->diffInDays($loan->due_at);
+                $fine = $daysOverdue * self::FINE_PER_DAY;
+            }
+            $loan->fine = $fine;
+            $loan->total_amount = ($loan->total ?? $loan->amount ?? self::DEFAULT_AMOUNT) + $fine;
+        }
+
+        return view('user.loans', compact('loans'));
     }
 }

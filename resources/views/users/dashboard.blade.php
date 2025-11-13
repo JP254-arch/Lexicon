@@ -16,6 +16,7 @@
                                 <th class="py-3 px-4 text-left">Borrowed On</th>
                                 <th class="py-3 px-4 text-left">Due Date</th>
                                 <th class="py-3 px-4 text-left">Status</th>
+                                <th class="py-3 px-4 text-left">Payment Status</th>
                                 <th class="py-3 px-4 text-left">Amount (Ksh)</th>
                                 <th class="py-3 px-4 text-left">Fine (Ksh)</th>
                                 <th class="py-3 px-4 text-left">Total (Ksh)</th>
@@ -25,20 +26,30 @@
                         <tbody>
                             @foreach ($loans as $loan)
                                 @php
-                                    // Calculate fine
+                                    $amount = $loan->amount ?? 500;
+
+                                    // Calculate fine (70 per day overdue)
+                                    $finePerDay = 70;
                                     $fine = 0;
-                                    if ($loan->status === 'borrowed' && now()->gt($loan->due_at)) {
+
+                                    if (now()->gt($loan->due_at)) {
                                         $daysOverdue = now()->diffInDays($loan->due_at);
-                                        $fine = $daysOverdue * 50; // 50 Ksh/day
+                                        $fine = $daysOverdue * $finePerDay;
                                     }
-                                    $total = $loan->total + $fine;
+
+                                    $total = $amount + $fine;
                                 @endphp
+
                                 <tr class="border-b hover:bg-gray-50 transition">
                                     <td class="py-3 px-4 font-medium text-gray-800">
-                                        {{ $loan->book->title ?? 'Unknown Book' }}</td>
-                                    <td class="py-3 px-4 text-gray-600">{{ $loan->borrowed_at?->format('M d, Y') ?? '-' }}
+                                        {{ $loan->book->title ?? 'Unknown Book' }}
                                     </td>
-                                    <td class="py-3 px-4 text-gray-600">{{ $loan->due_at?->format('M d, Y') ?? '-' }}</td>
+                                    <td class="py-3 px-4 text-gray-600">
+                                        {{ $loan->borrowed_at?->format('M d, Y') ?? '-' }}
+                                    </td>
+                                    <td class="py-3 px-4 text-gray-600">
+                                        {{ $loan->due_at?->format('M d, Y') ?? '-' }}
+                                    </td>
                                     <td class="py-3 px-4">
                                         @if ($loan->status === 'returned')
                                             <span class="text-green-600 font-semibold">Returned</span>
@@ -48,11 +59,22 @@
                                             <span class="text-yellow-600 font-semibold">Borrowed</span>
                                         @endif
                                     </td>
-                                    <td class="py-3 px-4">{{ number_format($loan->total, 2) }}</td>
-                                    <td class="py-3 px-4 text-red-600">{{ $fine > 0 ? number_format($fine, 2) : '-' }}</td>
-                                    <td class="py-3 px-4 font-semibold">{{ number_format($total, 2) }}</td>
                                     <td class="py-3 px-4">
-                                        @if ($loan->status === 'borrowed')
+                                        @if ($loan->payment_status === 'paid')
+                                            <span class="text-green-600 font-semibold">Paid</span>
+                                        @else
+                                            <span class="text-red-500 font-semibold">Unpaid</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 px-4">{{ number_format($amount, 2) }}</td>
+                                    <td class="py-3 px-4 text-red-600">
+                                        {{ $fine > 0 ? number_format($fine, 2) : '-' }}
+                                    </td>
+                                    <td class="py-3 px-4 font-semibold">
+                                        {{ number_format($total, 2) }}
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        @if ($loan->status === 'borrowed' && $loan->payment_status === 'unpaid')
                                             <form action="{{ route('payment.checkout', $loan->id) }}" method="GET">
                                                 <button type="submit"
                                                     class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
