@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use App\Models\User;
 use App\Models\Author;
+use App\Models\Category;
 use App\Models\Loan;
 
 class AdminController extends Controller
@@ -21,6 +22,7 @@ class AdminController extends Controller
             'books' => Book::count(),
             'users' => User::count(),
             'authors' => Author::count(),
+            'categories' => Category::count(), // ✅ Added this line
             'active_loans' => Loan::where('status', 'borrowed')->count(),
         ];
 

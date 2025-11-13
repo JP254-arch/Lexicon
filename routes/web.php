@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthorController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +64,8 @@ Route::middleware(['auth', 'role:librarian|admin'])->group(function () {
 
     // Loan Management
     Route::get('/loans', [LoanController::class, 'index'])->name('loans.index');
+    Route::get('/loans/{loan}/edit', [LoanController::class, 'edit'])->name('loans.edit');   // ✅ Added
+    Route::put('/loans/{loan}', [LoanController::class, 'update'])->name('loans.update');  // ✅ Added
     Route::patch('/admin/loans/{loan}/return', [LoanController::class, 'returnLoan'])->name('admin.loans.return');
     Route::delete('/loans/{loan}', [LoanController::class, 'destroy'])->name('loans.destroy');
 });
@@ -87,4 +90,15 @@ Route::middleware(['auth', 'role:member'])->group(function () {
     Route::post('/books/{book}/borrow', [LoanController::class, 'borrow'])->name('loans.borrow');
     Route::post('/books/{book}/return', [LoanController::class, 'returnBook'])->name('loans.return');
     Route::get('/my-loans', [LoanController::class, 'myLoans'])->name('loans.my');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Payment Routes
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->group(function () {
+    Route::get('/payment/checkout/{loan}', [PaymentController::class, 'checkout'])->name('payment.checkout');
+    Route::get('/payment/success/{loan}', [PaymentController::class, 'success'])->name('payment.success');
+    Route::get('/payment/cancel/{loan}', [PaymentController::class, 'cancel'])->name('payment.cancel');
 });

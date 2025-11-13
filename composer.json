@@ -5,10 +5,18 @@
   "license": "MIT",
   "require": {
     "php": "^8.1",
-    "laravel/framework": "^10.0"
+    "laravel/framework": "^10.0",
+    "stripe/stripe-php": "^18.2",
+    "laravel/sanctum": "^3.3",
+    "fakerphp/faker": "^1.24",
+    "guzzlehttp/guzzle": "^7.10"
   },
   "require-dev": {
-    "laravel/breeze": "^1.21"
+    "laravel/breeze": "^1.21",
+    "nunomaduro/collision": "^7.12",
+    "spatie/laravel-ignition": "^2.9",
+    "laravel/sail": "^1.48",
+    "laravel/tinker": "^2.10"
   },
   "autoload": {
     "psr-4": {
