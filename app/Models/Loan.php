@@ -10,6 +10,9 @@ class Loan extends Model
 {
     use HasFactory;
 
+    const FINE_PER_DAY = 70; // fine per overdue day in KES
+    const DEFAULT_AMOUNT = 500; // default loan amount
+
     protected $fillable = [
         'book_id',
         'user_id',
@@ -20,7 +23,7 @@ class Loan extends Model
         'amount',
         'total',
         'is_paid',
-        'status'
+        'status',
     ];
 
     protected $casts = [
@@ -30,8 +33,7 @@ class Loan extends Model
         'is_paid' => 'boolean',
     ];
 
-    const FINE_PER_DAY = 70;
-
+    // Relationships
     public function book()
     {
         return $this->belongsTo(Book::class);
@@ -42,42 +44,47 @@ class Loan extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Check if loan is overdue
-    public function getIsOverdueAttribute()
+    // Dynamic fine calculation
+    public function getCalculatedFineAttribute()
     {
-        return !$this->returned_at && $this->due_at && now()->greaterThan($this->due_at);
-    }
-
-    // Dynamic fine calculation (avoiding recursion)
-    public function getFineAttribute($value)
-    {
-        // If already returned, use stored fine
+        // If returned, use stored fine
         if ($this->status === 'returned') {
-            return $this->attributes['fine'] ?? 0;
+            return $this->fine ?? 0;
         }
 
-        // Calculate dynamically if overdue
-        if ($this->isOverdue) {
-            $daysOverdue = $this->due_at->diffInDays(now());
-            return $daysOverdue * self::FINE_PER_DAY;
+        if ($this->due_at) {
+            $due = $this->due_at instanceof Carbon ? $this->due_at : Carbon::parse($this->due_at);
+            $now = Carbon::now();
+
+            if ($now->gt($due)) {
+                // Correct order: now()->diffInDays(due) will give positive number of overdue days
+                $daysOverdue = $due->diffInDays($now);
+                return $daysOverdue * self::FINE_PER_DAY;
+            }
         }
 
         return 0;
     }
 
-    // Total = amount + fine
-    public function getTotalAttribute($value)
+    // Dynamic total (amount + fine)
+    public function getCalculatedTotalAttribute()
     {
-        $baseAmount = $this->amount ?? 500;
-        return $baseAmount + $this->fine;
+        return ($this->amount ?? self::DEFAULT_AMOUNT) + $this->calculated_fine;
     }
 
-    // Status label for dashboards
+    // Status label
     public function getStatusLabelAttribute()
     {
-        if ($this->status === 'returned')
+        if ($this->status === 'returned') {
             return 'Returned';
-        return $this->isOverdue ? 'Overdue' : 'Borrowed';
+        }
+
+        if ($this->due_at) {
+            $due = $this->due_at instanceof Carbon ? $this->due_at : Carbon::parse($this->due_at);
+            return Carbon::now()->gt($due) ? 'Overdue' : 'Borrowed';
+        }
+
+        return 'Borrowed';
     }
 
     // Payment label
