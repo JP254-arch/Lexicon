@@ -32,7 +32,7 @@
                                     $finePerDay = 70;
                                     $fine = 0;
 
-                                    if (now()->gt($loan->due_at)) {
+                                    if (now()->gt($loan->due_at) && $loan->status === 'borrowed') {
                                         $daysOverdue = now()->diffInDays($loan->due_at);
                                         $fine = $daysOverdue * $finePerDay;
                                     }
@@ -42,14 +42,10 @@
 
                                 <tr class="border-b hover:bg-gray-50 transition">
                                     <td class="py-3 px-4 font-medium text-gray-800">
-                                        {{ $loan->book->title ?? 'Unknown Book' }}
+                                        {{ $loan->book->title ?? 'Unknown Book' }}</td>
+                                    <td class="py-3 px-4 text-gray-600">{{ $loan->borrowed_at?->format('M d, Y') ?? '-' }}
                                     </td>
-                                    <td class="py-3 px-4 text-gray-600">
-                                        {{ $loan->borrowed_at?->format('M d, Y') ?? '-' }}
-                                    </td>
-                                    <td class="py-3 px-4 text-gray-600">
-                                        {{ $loan->due_at?->format('M d, Y') ?? '-' }}
-                                    </td>
+                                    <td class="py-3 px-4 text-gray-600">{{ $loan->due_at?->format('M d, Y') ?? '-' }}</td>
                                     <td class="py-3 px-4">
                                         @if ($loan->status === 'returned')
                                             <span class="text-green-600 font-semibold">Returned</span>
@@ -60,25 +56,22 @@
                                         @endif
                                     </td>
                                     <td class="py-3 px-4">
-                                        @if ($loan->payment_status === 'paid')
+                                        @if ($loan->is_paid)
                                             <span class="text-green-600 font-semibold">Paid</span>
                                         @else
                                             <span class="text-red-500 font-semibold">Unpaid</span>
                                         @endif
                                     </td>
                                     <td class="py-3 px-4">{{ number_format($amount, 2) }}</td>
-                                    <td class="py-3 px-4 text-red-600">
-                                        {{ $fine > 0 ? number_format($fine, 2) : '-' }}
-                                    </td>
-                                    <td class="py-3 px-4 font-semibold">
-                                        {{ number_format($total, 2) }}
-                                    </td>
+                                    <td class="py-3 px-4 text-red-600">{{ $fine > 0 ? number_format($fine, 2) : '-' }}</td>
+                                    <td class="py-3 px-4 font-semibold">{{ number_format($total, 2) }}</td>
                                     <td class="py-3 px-4">
-                                        @if ($loan->status === 'borrowed' && $loan->payment_status === 'unpaid')
-                                            <form action="{{ route('payment.checkout', $loan->id) }}" method="GET">
+                                        @if ($loan->status === 'borrowed')
+                                            <form action="{{ route('loans.return', $loan->id) }}" method="POST">
+                                                @csrf
                                                 <button type="submit"
-                                                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                                                    Pay Now
+                                                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                                                    Return
                                                 </button>
                                             </form>
                                         @else
