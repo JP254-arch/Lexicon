@@ -9,7 +9,8 @@
     "stripe/stripe-php": "^18.2",
     "laravel/sanctum": "^3.3",
     "fakerphp/faker": "^1.24",
-    "guzzlehttp/guzzle": "^7.10"
+    "guzzlehttp/guzzle": "^7.10",
+    "barryvdh/laravel-dompdf": "^3.1"
   },
   "require-dev": {
     "laravel/breeze": "^1.21",

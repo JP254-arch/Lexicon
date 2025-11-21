@@ -75,7 +75,7 @@
             @else
                 <div class="text-center py-10 text-gray-600">
                     <p>You haven’t borrowed any books yet.</p>
-                    <a href="{{ route('home') }}"
+                    <a href="{{ route('books.index') }}"
                         class="inline-block mt-4 px-5 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition">
                         Browse Books
                     </a>

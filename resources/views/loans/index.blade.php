@@ -12,6 +12,7 @@
                         <th class="px-6 py-3 text-left">User</th>
                         <th class="px-6 py-3 text-left">Book Title</th>
                         <th class="px-6 py-3 text-left">Status</th>
+                        <th class="py-3 px-4 text-left">Payment Status</th>
                         <th class="px-6 py-3 text-left">Due Date</th>
                         <th class="px-6 py-3 text-left">Fine (Ksh)</th>
                         <th class="px-6 py-3 text-left">Total (Ksh)</th>
@@ -45,6 +46,11 @@
                                 @else
                                     <span class="text-yellow-600 font-semibold">Borrowed</span>
                                 @endif
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="{{ $loan->is_paid ? 'text-green-600' : 'text-red-500' }} font-semibold">
+                                    {{ $loan->payment_label }}
+                                </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">{{ $loan->due_at?->format('M d, Y') ?? '-' }}</td>
                             <td class="px-6 py-4 whitespace-nowrap font-semibold text-red-600">Ksh {{ $fine }}</td>

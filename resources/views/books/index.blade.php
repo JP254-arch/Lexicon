@@ -4,6 +4,29 @@
     <div class="container mx-auto px-4 py-10">
         <h1 class="text-3xl font-bold mb-6 text-indigo-600 text-center">All Books</h1>
 
+        {{-- Search Bar --}}
+        <form action="{{ route('books.index') }}" method="GET" class="mb-6">
+            <div class="flex items-center space-x-2">
+                <input type="text" name="q" placeholder="Search books by title, author, or category..."
+                    value="{{ request('q') }}"
+                    class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+
+                <select name="search_by"
+                    class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="all" {{ request('search_by') == 'all' ? 'selected' : '' }}>All</option>
+                    <option value="title" {{ request('search_by') == 'title' ? 'selected' : '' }}>Title</option>
+                    <option value="author" {{ request('search_by') == 'author' ? 'selected' : '' }}>Author</option>
+                    <option value="category" {{ request('search_by') == 'category' ? 'selected' : '' }}>Category</option>
+                </select>
+
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition">
+                    🔍 Search
+                </button>
+            </div>
+        </form>
+
+
+
         {{-- Book Grid --}}
         <div class="grid md:grid-cols-3 gap-8">
             @forelse($books as $book)
@@ -26,6 +49,10 @@
                             <p class="text-gray-600 mb-2">by {{ $book->author->name ?? 'Unknown Author' }}</p>
                             <p class="text-gray-500 text-sm mb-4">Category: {{ $book->category->name ?? 'Uncategorized' }}
                             </p>
+                            <a href="{{ route('books.show', $book->id) }}"
+                                class="text-indigo-600 font-semibold hover:underline">
+                                View Details →
+                            </a>
                         </div>
 
                         {{-- Borrow / Payment Buttons --}}

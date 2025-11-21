@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Author;
 use App\Models\Category;
 use App\Models\Loan;
+use App\Models\Payment; // <-- Added Payment model
 
 class AdminController extends Controller
 {
@@ -22,8 +23,9 @@ class AdminController extends Controller
             'books' => Book::count(),
             'users' => User::count(),
             'authors' => Author::count(),
-            'categories' => Category::count(), // ✅ Added this line
+            'categories' => Category::count(),
             'active_loans' => Loan::where('status', 'borrowed')->count(),
+            'total_revenue' => Payment::sum('total'), // <-- Total revenue for finance
         ];
 
         // Fetch recent loan activity
@@ -32,6 +34,11 @@ class AdminController extends Controller
             ->take(5)
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'recentLoans'));
+        // Fetch all payments for Finance table
+        $payments = Payment::with(['user', 'loan.book'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.dashboard', compact('stats', 'recentLoans', 'payments'));
     }
 }

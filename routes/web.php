@@ -9,6 +9,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\FinanceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -72,6 +73,20 @@ Route::middleware(['auth', 'role:librarian|admin'])->group(function () {
 
     // Admin: Stripe return success
     Route::get('/admin/loans/{loan}/return-success', [LoanController::class, 'returnSuccess'])->name('admin.loans.return.success');
+
+    // Finance Management
+    Route::get('/admin/finance', [FinanceController::class, 'index'])->name('finance.index');
+
+});
+
+// Admin Payment Routes
+Route::prefix('admin')->middleware(['auth', 'role:admin|librarian'])->group(function () {
+    Route::get('/receipt/{payment}/download', [PaymentController::class, 'downloadReceipt'])
+        ->name('receipt.download');
+
+    // Optional: route for storing payments (if manual)
+    Route::get('/loan/{loan}/pay/{method?}', [PaymentController::class, 'storePayment'])
+        ->name('admin.payments.store');
 });
 
 /*

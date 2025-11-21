@@ -92,4 +92,11 @@ class Loan extends Model
     {
         return $this->is_paid ? 'Paid' : 'Unpaid';
     }
+
+    // Relationship to Payment
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
+    }
+
 }

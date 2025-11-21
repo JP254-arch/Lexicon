@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="max-w-7xl mx-auto py-6">
-        <h1 class="text-3xl font-bold mb-6">📊 Books Data</h1>
+        <h1 class="text-3xl font-bold mb-6">📊 Books & Data</h1>
 
         {{-- Search Bar --}}
         <form action="{{ route('books.data') }}" method="GET" class="mb-6">

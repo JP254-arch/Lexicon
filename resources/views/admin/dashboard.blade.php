@@ -8,7 +8,7 @@
         </p>
 
         {{-- Dashboard Stats --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-10">
 
             {{-- Books --}}
             <div
@@ -16,15 +16,12 @@
                 <h2 class="text-sm font-semibold text-indigo-700 uppercase">Books</h2>
                 <p class="text-3xl font-bold text-indigo-800 mt-2">{{ $stats['books'] ?? 0 }}</p>
                 <div class="mt-3 space-x-2">
-                    <a href="{{ route('books.index') }}"
+                    <a href="{{ route('books.data') }}"
                         class="inline-block bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">📚
-                        Manage Books</a>
+                        Manage Books & Data</a>
                     <a href="{{ route('books.create') }}"
                         class="inline-block bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition">➕
                         Add Book</a>
-                    <a href="{{ route('books.data') }}"
-                        class="inline-block bg-gray-500 hover:bg-gray-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition">📊
-                        Books Data</a>
                 </div>
             </div>
 
@@ -66,6 +63,17 @@
                 <a href="{{ route('loans.index') }}"
                     class="mt-3 inline-block bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">Manage
                     Loans</a>
+            </div>
+
+            {{-- Finance --}}
+            <div
+                class="bg-orange-50 border-l-4 border-orange-500 rounded-lg p-5 shadow-sm hover:shadow-md transition cursor-pointer">
+                <h2 class="text-sm font-semibold text-orange-700 uppercase">Finance</h2>
+                <p class="text-3xl font-bold text-orange-800 mt-2">{{ number_format($stats['total_revenue'] ?? 0, 2) }} Ksh
+                </p>
+                <a href="{{ route('finance.index') }}"
+                    class="mt-3 inline-block bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">Manage
+                    Finance</a>
             </div>
 
         </div>
@@ -110,7 +118,8 @@
                                 </td>
                                 <td class="px-6 py-4">{{ number_format($loan->amount ?? 0, 2) }}</td>
                                 <td class="px-6 py-4 text-red-600">
-                                    {{ $loan->calculated_fine > 0 ? number_format($loan->calculated_fine, 2) : '-' }}</td>
+                                    {{ $loan->calculated_fine > 0 ? number_format($loan->calculated_fine, 2) : '0.00' }}
+                                </td>
                                 <td class="px-6 py-4 font-semibold">{{ number_format($loan->calculated_total, 2) }}</td>
                                 <td class="px-6 py-4">{{ $loan->due_at?->format('M d, Y') ?? '-' }}</td>
                                 <td class="px-6 py-4">

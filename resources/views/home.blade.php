@@ -18,7 +18,7 @@
                 Your gateway to endless learning — explore, discover, and be inspired by books and ideas that shape the
                 future.
             </p>
-            <a href="#featured-books"
+            <a href="{{ route('books.index') }}"
                 class="bg-gradient-to-r from-rose-500 to-indigo-600 text-white font-semibold px-8 py-3 rounded-lg shadow-md hover:scale-105 transform transition-all duration-300"
                 data-aos="zoom-in" data-aos-delay="400">
                 Explore Books
