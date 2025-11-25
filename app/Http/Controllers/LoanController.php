@@ -117,6 +117,11 @@ class LoanController extends Controller
         return redirect()->route('books.index')->with('success', 'Payment successful, book borrowed!');
     }
 
+    // Duplicate returnBook implementation removed — consolidated returnBook method remains later in this class.
+
+    /**
+     * Stripe callback after successful return payment
+     */
     /**
      * Return a book (redirects to Stripe if unpaid)
      */
@@ -124,8 +129,9 @@ class LoanController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->role !== 'admin' && $loan->user_id !== $user->id) {
-            abort(403);
+        // Authorization: members can only return their own loans
+        if ($user->role === 'member' && $loan->user_id !== $user->id) {
+            abort(403, 'Unauthorized.');
         }
 
         if ($loan->status === 'returned') {
@@ -140,8 +146,8 @@ class LoanController extends Controller
         }
         $totalAmount = ($loan->amount ?? 0) + $fine;
 
+        // If not paid, redirect to Stripe
         if (!$loan->is_paid) {
-            // Redirect to Stripe for payment
             Stripe::setApiKey(env('STRIPE_SECRET'));
             try {
                 $session = StripeSession::create([
@@ -157,12 +163,16 @@ class LoanController extends Controller
                         ]
                     ],
                     'mode' => 'payment',
-                    'success_url' => route('loans.return.success', ['loan' => $loan->id]),
-                    'cancel_url' => route('loans.my'),
+                    'success_url' => $user->role === 'member'
+                        ? route('loans.return.success', ['loan' => $loan->id])
+                        : route('admin.loans.return.success', ['loan' => $loan->id]),
+                    'cancel_url' => $user->role === 'member'
+                        ? route('loans.my')
+                        : route('loans.index'),
                 ]);
             } catch (\Throwable $e) {
                 Log::error('Stripe payment redirect failed: ' . $e->getMessage());
-                return redirect()->route('loans.my')->with('error', 'Payment initialization failed.');
+                return redirect()->back()->with('error', 'Payment initialization failed.');
             }
 
             return redirect($session->url);
@@ -174,31 +184,45 @@ class LoanController extends Controller
             'returned_at' => now(),
         ]);
 
-        return redirect()->route('loans.my')->with('success', 'Book returned successfully.');
+        // Redirect based on role
+        $redirect = $user->role === 'member' ? route('loans.my') : route('loans.index');
+
+        return redirect($redirect)->with('success', 'Book returned successfully.');
     }
+
 
     /**
      * Stripe callback after successful return payment
      */
     public function returnSuccess(Loan $loan)
     {
+        $user = Auth::user();
+
         $loan->update([
             'status' => 'returned',
             'returned_at' => now(),
             'is_paid' => true,
         ]);
 
-        return redirect()->route('loans.my')->with('success', 'Payment successful! Book returned.');
+        $redirect = in_array($user->role, ['admin', 'librarian'])
+            ? route('loans.index')
+            : route('loans.my');
+
+        return redirect($redirect)->with('success', 'Payment successful! Book returned.');
     }
+
 
     /**
      * Pay deferred loan (Stripe checkout)
      */
-    public function payDeferredLoan(Loan $loan)
+    public function payDeferredLoan($loanId)
     {
         $user = Auth::user();
-        if ($loan->user_id !== $user->id)
+        $loan = Loan::with('book')->findOrFail($loanId);
+
+        if ($loan->user_id !== $user->id) {
             abort(403);
+        }
 
         $chargeAmount = $loan->calculated_total;
 
@@ -253,17 +277,21 @@ class LoanController extends Controller
         $request->validate([
             'status' => 'required|in:borrowed,returned',
             'due_at' => 'nullable|date',
-            'total' => 'nullable|numeric|min:0',
+            'amount' => 'nullable|numeric|min:0',
+            'is_paid' => 'required|boolean',
         ]);
 
         $loan->update([
             'status' => $request->status,
             'due_at' => $request->due_at,
-            'total' => $request->total ?? $loan->amount,
+            'amount' => $request->amount ?? $loan->amount,
+            'is_paid' => $request->is_paid,   // <-- FIXED!
+            'total' => ($request->amount ?? $loan->amount) + $loan->calculated_fine,
         ]);
 
         return redirect()->route('loans.index')->with('success', 'Loan updated successfully.');
     }
+
 
     /**
      * Admin: Delete loan

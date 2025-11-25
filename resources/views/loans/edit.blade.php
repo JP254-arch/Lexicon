@@ -33,12 +33,12 @@
 
             {{-- Payment Status --}}
             <div class="mb-4">
-                <label for="payment_status" class="block text-gray-700 font-semibold mb-2">Payment Status</label>
-                <select name="payment_status" id="payment_status" class="w-full p-3 border rounded-lg">
-                    <option value="paid" {{ $loan->payment_status === 'paid' ? 'selected' : '' }}>Paid</option>
-                    <option value="unpaid" {{ $loan->payment_status === 'unpaid' ? 'selected' : '' }}>Unpaid</option>
-                </select>
-            </div>
+    <label for="is_paid" class="block text-gray-700 font-semibold mb-2">Payment Status</label>
+    <select name="is_paid" id="is_paid" class="w-full p-3 border rounded-lg">
+        <option value="1" {{ $loan->is_paid ? 'selected' : '' }}>Paid</option>
+        <option value="0" {{ !$loan->is_paid ? 'selected' : '' }}>Unpaid</option>
+    </select>
+</div>
 
             {{-- Due Date --}}
             <div class="mb-4">
