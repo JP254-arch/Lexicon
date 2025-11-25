@@ -32,51 +32,6 @@
                 <span class="font-bold text-indigo-600 text-lg">{{ config('app.name', 'Lexicon') }}</span>
             </a>
 
-            {{-- Hamburger (Mobile) --}}
-            <div class="md:hidden">
-                <button @click="open = !open"
-                    class="focus:outline-none text-indigo-600 transition-transform duration-300"
-                    :class="open ? 'rotate-90' : ''">
-                    <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                    <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none"
-                        viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            {{-- Mobile Menu --}}
-            <div x-show="open" x-transition
-                class="absolute right-0 mt-3 w-48 bg-gray-800 text-white rounded-xl shadow-xl overflow-hidden z-30 md:hidden">
-                <div class="flex flex-col divide-y divide-gray-700">
-                    <a href="{{ route('home') }}" class="px-4 py-2 hover:bg-gray-700 transition">Home</a>
-                    <a href="{{ route('books.index') }}" class="px-4 py-2 hover:bg-gray-700 transition">Books</a>
-                    <a href="{{ route('about') }}" class="px-4 py-2 hover:bg-gray-700 transition">About</a>
-                    <a href="{{ route('contact') }}" class="px-4 py-2 hover:bg-gray-700 transition">Contact</a>
-
-                    @auth
-                        <a href="{{ auth()->user()->role === 'member' ? route('user.dashboard') : route('admin.dashboard') }}"
-                            class="px-4 py-2 hover:bg-gray-700 transition">Dashboard</a>
-                        <span class="px-4 py-2 text-gray-200 font-medium">{{ auth()->user()->name }}</span>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit"
-                                class="px-4 py-2 w-full text-left text-red-400 hover:text-red-500 hover:bg-gray-700 transition">
-                                Logout
-                            </button>
-                        </form>
-                    @else
-                        <a href="{{ route('login') }}" class="px-4 py-2 hover:bg-gray-700 transition">Login</a>
-                        <a href="{{ route('register') }}" class="px-4 py-2 hover:bg-gray-700 transition">Register</a>
-                    @endauth
-                </div>
-            </div>
-
             {{-- Desktop Links --}}
             <div class="hidden md:flex items-center space-x-5">
                 <a href="{{ route('home') }}" class="text-gray-700 hover:text-indigo-600 font-medium">Home</a>
@@ -128,8 +83,50 @@
                     @endauth
                 </div>
             </div>
+
+            {{-- Hamburger (Mobile) --}}
+            <div class="md:hidden">
+                <button @click="open = !open"
+                    class="focus:outline-none text-indigo-600 transition-transform duration-300"
+                    :class="open ? 'rotate-90' : ''">
+                    <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    <svg x-show="open" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none"
+                        viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="4"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Mobile Menu (Same Links as Desktop) --}}
+            <div x-show="open" x-transition
+                class="absolute right-0 top-full mt-3 w-56 bg-white text-gray-800 rounded-xl shadow-xl overflow-hidden z-30 flex flex-col space-y-1 md:hidden p-2">
+                <a href="{{ route('home') }}" class="px-4 py-2 hover:bg-gray-100 transition">Home</a>
+                <a href="{{ route('books.index') }}" class="px-4 py-2 hover:bg-gray-100 transition">Books</a>
+                <a href="{{ route('about') }}" class="px-4 py-2 hover:bg-gray-100 transition">About</a>
+                <a href="{{ route('contact') }}" class="px-4 py-2 hover:bg-gray-100 transition">Contact</a>
+
+                @auth
+                    <a href="{{ auth()->user()->role === 'member' ? route('user.dashboard') : route('admin.dashboard') }}"
+                        class="px-4 py-2 hover:bg-gray-100 transition">Dashboard</a>
+                    <span class="px-4 py-2 text-green-500 font-medium">{{ auth()->user()->name }}</span>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit"
+                            class="px-4 py-2 w-full text-left text-red-500 hover:bg-gray-100 transition">Logout</button>
+                    </form>
+                @else
+                    <a href="{{ route('login') }}" class="px-4 py-2 hover:bg-gray-100 transition">Login</a>
+                    <a href="{{ route('register') }}" class="px-4 py-2 hover:bg-gray-100 transition">Register</a>
+                @endauth
+            </div>
         </div>
     </nav>
+
 
     {{-- Main Content --}}
     <main class="flex-grow py-12 px-4">
