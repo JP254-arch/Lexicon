@@ -168,6 +168,7 @@ class PaymentController extends Controller
         return view('admin.finance.index', compact('payments', 'totalRevenue'));
     }
 
+
     /**
      * Optional: Record manual/offline payment
      */

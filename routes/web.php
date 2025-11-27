@@ -75,7 +75,7 @@ Route::middleware(['auth', 'role:librarian|admin'])->group(function () {
     Route::get('/admin/loans/{loan}/return-success', [LoanController::class, 'returnSuccess'])->name('admin.loans.return.success');
 
     // Finance Management
-    Route::get('/admin/finance', [FinanceController::class, 'index'])->name('finance.index');
+    Route::get('/admin/finance', [PaymentController::class, 'finance'])->name('finance.index');
 
 });
 
