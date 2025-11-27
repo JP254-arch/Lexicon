@@ -15,7 +15,7 @@ class FinanceController extends Controller
     {
         // All payments, latest first
         $payments = Payment::with(['user', 'loan.book'])
-            ->orderBy('created_at', 'desc')
+            ->orderBy(column: 'created_at', 'desc')
             ->get();
 
         // Optional: total revenue
