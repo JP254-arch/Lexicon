@@ -26,7 +26,7 @@ class UserController extends Controller
     public function updateRole(Request $request, User $user)
     {
         $request->validate([
-            'role' => 'required|in:user,author,admin'
+            'role' => 'required|in:member,librarian,admin'
         ]);
 
         if ($user->id === auth()->id()) {

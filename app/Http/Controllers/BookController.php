@@ -167,14 +167,21 @@ class BookController extends Controller
     public function toggleLike(Request $request, Book $book)
     {
         $user = Auth::user();
-        if (!$user)
+        if (!$user) {
             return response()->json(['message' => 'Unauthorized'], 401);
+        }
 
-        $liked = $book->likes()->toggle($user->id)['attached'] ?? false;
-        $likesCount = $book->likes()->count();
+        $result = $book->likes()->toggle($user->id);
 
-        return response()->json(['liked' => $liked, 'likesCount' => $likesCount]);
+        // true if user just liked the book
+        $liked = !empty($result['attached']);
+
+        return response()->json([
+            'liked' => $liked,
+            'likes_count' => $book->likes()->count(),
+        ]);
     }
+
 
     public function rate(Request $request, Book $book)
     {

@@ -36,9 +36,9 @@
                                 @csrf
                                 @method('PATCH')
                                 <select name="role" onchange="this.form.submit()" class="border rounded px-2 py-1 text-sm">
-                                    <option value="user" {{ $user->role == 'user' ? 'selected' : '' }}>User</option>
-                                    <option value="author" {{ $user->role == 'author' ? 'selected' : '' }}>Author</option>
+                                    <option value="member" {{ $user->role == 'member' ? 'selected' : '' }}>Member</option>
                                     <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>Admin</option>
+                                    <option value="librarian" {{ $user->role == 'librarian' ? 'selected' : '' }}>Librarian</option>
                                 </select>
                             </form>
                         </td>
